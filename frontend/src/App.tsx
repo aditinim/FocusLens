@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { initializeFaceLandmarker } from './vision/faceLandmarker'
+
 import LandingPage from './pages/LandingPage'
 import LiveSessionPage from './pages/LiveSessionPage'
 import DashboardPage from './pages/DashboardPage'
@@ -8,6 +11,17 @@ import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
 
 function App() {
+
+  useEffect(() => {
+    initializeFaceLandmarker()
+      .then(() => {
+        console.log('✅ Face Landmarker initialized successfully')
+      })
+      .catch((error) => {
+        console.error('❌ Face Landmarker initialization failed:', error)
+      })
+  }, [])
+  
   return (
     <BrowserRouter>
       <Routes>
