@@ -34,7 +34,6 @@ export function analyzeFrame(video: HTMLVideoElement) {
     return null
   }
 
-  console.log('✅ Face Landmarker is ready')
 
   const result = landmarker.detectForVideo(video, performance.now())
 

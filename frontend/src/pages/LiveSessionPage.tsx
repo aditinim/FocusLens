@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { NormalizedLandmark } from '@mediapipe/tasks-vision'
 import CameraPanel from '../components/session/CameraPanel'
 import SessionMetrics from '../components/session/SessionMetrics'
 import FocusScore from '../components/session/FocusScore'
@@ -8,6 +9,10 @@ import { initializeFaceLandmarker, analyzeFrame } from '../vision/faceLandmarker
 
 function LiveSessionPage() {
     const [isSessionActive, setIsSessionActive] = useState(false)
+    const lastInferenceTime = useRef(0)
+    const animationFrameId = useRef<number | null>(null)
+    const [hasFace, setHasFace] = useState(false)
+    const [landmarks, setLandmarks] = useState<NormalizedLandmark[] | null>(null)
 
     const {
         videoRef,
@@ -33,7 +38,45 @@ function LiveSessionPage() {
             console.log('📍 First landmark:', landmarks[0])
             console.log('📍 First five landmarks:', landmarks.slice(0, 5))
         }
+
     }
+
+    const testLoop = (timestamp: number) => {
+        if (timestamp - lastInferenceTime.current >= 66) {
+            if (videoRef.current && videoRef.current.readyState >= 2) {
+                const result = analyzeFrame(videoRef.current)
+
+                const faceDetected = (result?.faceLandmarks?.length ?? 0) > 0
+
+                setHasFace(faceDetected)
+
+                if (faceDetected && result?.faceLandmarks) {
+                    setLandmarks(result.faceLandmarks[0])
+                } else {
+                    setLandmarks(null)
+                }
+
+                if (faceDetected && result?.faceLandmarks) {
+                    const landmarks = result.faceLandmarks[0]
+
+                    console.log('👤 First landmark:', landmarks[0])
+                }
+            }
+
+            lastInferenceTime.current = timestamp
+        }
+
+        animationFrameId.current = requestAnimationFrame(testLoop)
+    }
+
+
+    const stopTestLoop = () => {
+        if (animationFrameId.current !== null) {
+            cancelAnimationFrame(animationFrameId.current)
+            animationFrameId.current = null
+        }
+    }
+
 
     return (
         <div className="min-h-screen p-6 lg:p-10">
@@ -57,7 +100,18 @@ function LiveSessionPage() {
                         videoRef={videoRef}
                         isCameraActive={isCameraActive}
                         cameraError={cameraError}
+                        landmarks={landmarks}
                     />
+
+                    <div className="mt-4 rounded-lg border border-primary/20 bg-surface p-4">
+                        <p className="font-mono text-xs text-muted">
+                            VISION STATUS
+                        </p>
+
+                        <p className="mt-2 text-sm text-foreground">
+                            {hasFace ? '● FACE DETECTED' : '○ NO FACE DETECTED'}
+                        </p>
+                    </div>
 
                     <FocusScore />
                 </div>
@@ -77,12 +131,11 @@ function LiveSessionPage() {
 
                                 setIsSessionActive(true)
 
-                                setTimeout(() => {
-                                    testFaceDetection()
-                                }, 1000)
+                                animationFrameId.current = requestAnimationFrame(testLoop)
                             }
                         }}
                         onEnd={() => {
+                            stopTestLoop()
                             stopCamera()
                             setIsSessionActive(false)
                         }}
