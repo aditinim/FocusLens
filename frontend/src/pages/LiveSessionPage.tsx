@@ -22,24 +22,7 @@ function LiveSessionPage() {
         cameraError,
     } = useCamera()
 
-    const testFaceDetection = () => {
-        if (!videoRef.current) {
-            return
-        }
-
-        const result = analyzeFrame(videoRef.current)
-
-        console.log('🧠 MediaPipe result:', result)
-
-        if (result?.faceLandmarks.length) {
-            const landmarks = result.faceLandmarks[0]
-
-            console.log('📍 Number of landmarks:', landmarks.length)
-            console.log('📍 First landmark:', landmarks[0])
-            console.log('📍 First five landmarks:', landmarks.slice(0, 5))
-        }
-
-    }
+    
 
     const testLoop = (timestamp: number) => {
         if (timestamp - lastInferenceTime.current >= 66) {
