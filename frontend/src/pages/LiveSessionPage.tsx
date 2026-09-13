@@ -4,6 +4,7 @@ import SessionMetrics from '../components/session/SessionMetrics'
 import FocusScore from '../components/session/FocusScore'
 import SessionControls from '../components/session/SessionControls'
 import useCamera from '../hooks/useCamera'
+import { initializeFaceLandmarker, analyzeFrame } from '../vision/faceLandmarker'
 
 function LiveSessionPage() {
     const [isSessionActive, setIsSessionActive] = useState(false)
@@ -15,6 +16,24 @@ function LiveSessionPage() {
         isCameraActive,
         cameraError,
     } = useCamera()
+
+    const testFaceDetection = () => {
+        if (!videoRef.current) {
+            return
+        }
+
+        const result = analyzeFrame(videoRef.current)
+
+        console.log('🧠 MediaPipe result:', result)
+
+        if (result?.faceLandmarks.length) {
+            const landmarks = result.faceLandmarks[0]
+
+            console.log('📍 Number of landmarks:', landmarks.length)
+            console.log('📍 First landmark:', landmarks[0])
+            console.log('📍 First five landmarks:', landmarks.slice(0, 5))
+        }
+    }
 
     return (
         <div className="min-h-screen p-6 lg:p-10">
@@ -54,7 +73,13 @@ function LiveSessionPage() {
                             const started = await startCamera()
 
                             if (started) {
+                                await initializeFaceLandmarker()
+
                                 setIsSessionActive(true)
+
+                                setTimeout(() => {
+                                    testFaceDetection()
+                                }, 1000)
                             }
                         }}
                         onEnd={() => {
